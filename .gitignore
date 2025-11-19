@@ -1,0 +1,45 @@
+# ==========================================
+# ARCHIVOS GENERALES DE PYTHON
+# ==========================================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.pkl
+*.joblib
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# ==========================================
+# ARCHIVOS TEMPORALES / OS
+# ==========================================
+.DS_Store
+Thumbs.db
+
+# ==========================================
+# IPYNB CHECKPOINTS
+# ==========================================
+.ipynb_checkpoints/
+
+# ==========================================
+# ARCHIVOS DE MODELO / PIPELINE
+# (evitar subir modelos enormes al repo)
+# ==========================================
+modelo_randomforest_final.pkl
+preprocesamiento_pca.pkl
+
+# ==========================================
+# DATASETS GRANDES
+# ==========================================
+*.csv
+*.tsv
+*.xlsx
+
+# ==========================================
+# STREAMLIT
+# ==========================================
+.streamlit/
