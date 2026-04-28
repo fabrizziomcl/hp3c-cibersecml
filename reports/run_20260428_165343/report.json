@@ -1,0 +1,42 @@
+{
+    "metadata": {
+        "report_id": "REP-9039",
+        "timestamp": "2026-04-28 16:53:57",
+        "model_name": "Random Forest Classifier",
+        "parameters": {
+            "n_estimators": 100,
+            "max_depth": 10
+        }
+    },
+    "dataset": {
+        "total_rows": 58062,
+        "class_distribution": {
+            "0": 29231,
+            "1": 28831
+        },
+        "train_size": 46449,
+        "test_size": 11613
+    },
+    "hpc_performance": {
+        "time_seq": 0.16484522819519043,
+        "time_par": 6.9070234298706055,
+        "speedup": 0.02386631953241812,
+        "efficiency": 0.00596657988310453
+    },
+    "model_performance": {
+        "train": {
+            "accuracy": 0.9772653878447329,
+            "precision": 0.969399093939653,
+            "recall": 0.9852315176787421,
+            "f1_score": 0.9772511848341232,
+            "roc_auc": 0.9977235700878736
+        },
+        "test": {
+            "accuracy": 0.970808576595195,
+            "precision": 0.9632452574525745,
+            "recall": 0.9789981063866414,
+            "f1_score": 0.9710577990267224,
+            "roc_auc": 0.995223715926438
+        }
+    }
+}
