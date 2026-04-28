@@ -25,7 +25,7 @@ def main():
 
     if not os.path.exists(data_path):
         st.warning(f"Archivo no encontrado en {data_path}. Usando dataset original como fallback.")
-        data_path = "data/raw/Obfuscated-MalMem2022.csv"
+        data_path = "dataset/Obfuscated-MalMem2022.csv"
         if not os.path.exists(data_path):
              st.error("No se encontró ningún dataset. Por favor ejecuta 'python src/data/ingestion.py' primero.")
              return
