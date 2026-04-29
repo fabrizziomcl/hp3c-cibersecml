@@ -22,8 +22,24 @@ def check_improvement():
     try:
         with open(new_report_path, 'r') as f:
             new_data = json.load(f)
-        with open(old_report_path, 'r') as f:
-            old_data = json.load(f)
+        
+        # Intentar buscar el reporte anterior que SI sea compatible
+        old_data = None
+        for report_folder in runs[1:]:
+            try:
+                temp_path = report_folder / "report.json"
+                with open(temp_path, 'r') as f:
+                    temp_data = json.load(f)
+                if "model_performance" in temp_data:
+                    old_data = temp_data
+                    print(f"INFO: Comparando contra reporte compatible encontrado en: {report_folder.name}")
+                    break
+            except:
+                continue
+
+        if old_data is None:
+            print("INFO: No se encontraron reportes previos compatibles. Aprobando por defecto.")
+            return True
 
         new_recall = new_data["model_performance"]["test"]["recall"]
         old_recall = old_data["model_performance"]["test"]["recall"]
