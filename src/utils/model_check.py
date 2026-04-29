@@ -1,65 +1,64 @@
-import os
 import json
 import sys
 from pathlib import Path
+from typing import Optional
 
-def get_latest_reports():
-    reports_dir = Path("reports")
-    # Obtener todas las carpetas que empiezan con 'run_' y ordenarlas por nombre (fecha)
-    runs = sorted([d for d in reports_dir.iterdir() if d.is_dir() and d.name.startswith("run_")], reverse=True)
-    return runs
+REQUIRED_SCHEMA_VERSION = 2
 
-def check_improvement():
-    runs = get_latest_reports()
-    
-    if len(runs) < 2:
-        print("INFO: Primera ejecucion detectada o no hay reportes previos. Aprobando por defecto.")
+
+def _load_report(path: Path) -> Optional[dict]:
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+    if data.get("schema_version") != REQUIRED_SCHEMA_VERSION:
+        return None
+    if "model_performance" not in data or "test" not in data["model_performance"]:
+        return None
+    if "recall" not in data["model_performance"]["test"]:
+        return None
+    return data
+
+
+def _list_runs(reports_dir: Path = Path("reports")) -> list[Path]:
+    if not reports_dir.exists():
+        return []
+    return sorted(
+        (d for d in reports_dir.iterdir() if d.is_dir() and d.name.startswith("run_")),
+        reverse=True,
+    )
+
+
+def check_improvement(reports_dir: Path = Path("reports")) -> bool:
+    runs = _list_runs(reports_dir)
+    if not runs:
+        print("INFO: No runs found. Approving by default.")
         return True
 
-    new_report_path = runs[0] / "report.json"
-    old_report_path = runs[1] / "report.json"
-
-    try:
-        with open(new_report_path, 'r') as f:
-            new_data = json.load(f)
-        
-        # Intentar buscar el reporte anterior que SI sea compatible
-        old_data = None
-        for report_folder in runs[1:]:
-            try:
-                temp_path = report_folder / "report.json"
-                with open(temp_path, 'r') as f:
-                    temp_data = json.load(f)
-                if "model_performance" in temp_data:
-                    old_data = temp_data
-                    print(f"INFO: Comparando contra reporte compatible encontrado en: {report_folder.name}")
-                    break
-            except:
-                continue
-
-        if old_data is None:
-            print("INFO: No se encontraron reportes previos compatibles. Aprobando por defecto.")
-            return True
-
-        new_recall = new_data["model_performance"]["test"]["recall"]
-        old_recall = old_data["model_performance"]["test"]["recall"]
-
-        print(f"DEBUG: Nuevo Recall = {new_recall:.4f}")
-        print(f"DEBUG: Recall Anterior = {old_recall:.4f}")
-
-        if new_recall >= old_recall:
-            print("SUCCESS: El modelo ha mejorado o es igual. Procediendo al push.")
-            return True
-        else:
-            print("WARNING: El modelo no superó el recall anterior. Se descarta la actualizacion.")
-            return False
-            
-    except Exception as e:
-        print(f"ERROR: Error al leer los reportes: {e}")
+    new_data = _load_report(runs[0] / "report.json")
+    if new_data is None:
+        print(f"ERROR: Latest report at {runs[0]} is missing or schema-invalid.")
         return False
 
+    old_data = next(
+        (loaded for d in runs[1:] if (loaded := _load_report(d / "report.json"))),
+        None,
+    )
+    if old_data is None:
+        print("INFO: No previous compatible report. Approving by default.")
+        return True
+
+    new_recall = new_data["model_performance"]["test"]["recall"]
+    old_recall = old_data["model_performance"]["test"]["recall"]
+    print(f"DEBUG: new_recall={new_recall:.4f} | previous_recall={old_recall:.4f}")
+
+    if new_recall >= old_recall:
+        print("SUCCESS: Recall did not regress. Promoting model.")
+        return True
+    print("WARNING: Recall regression detected. Skipping promotion.")
+    return False
+
+
 if __name__ == "__main__":
-    if check_improvement():
-        sys.exit(0)
-    else:
-        sys.exit(1)
+    sys.exit(0 if check_improvement() else 1)
