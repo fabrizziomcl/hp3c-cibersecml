@@ -28,14 +28,25 @@ jobs:
           export PYTHONPATH=$PYTHON_PATH:$(pwd)
           python src/models/train.py
 
-      - name: Upload HPC Report
+      - name: Upload Training Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: hpc-training-report
-          path: reports/hpc_report.md
+          name: training-artifacts
+          path: |
+            models/model.pkl
+            reports/
 
-      - name: Upload Trained Model
-        uses: actions/upload-artifact@v4
-        with:
-          name: trained-model
-          path: models/model.pkl
+      - name: Check Model Improvement
+        id: check_model
+        run: |
+          export PYTHONPATH=$PYTHON_PATH:$(pwd)
+          python src/utils/model_check.py
+
+      - name: Commit and Push changes
+        if: success()
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add models/model.pkl reports/
+          git commit -m "build: deploy improved model (recall threshold met)" || echo "No changes to commit"
+          git push
