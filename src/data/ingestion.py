@@ -4,39 +4,54 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from src.utils.logger import logging
 from src.utils.exception import CustomException
-from pathlib import Path
+from src.entity.config_entity import DataIngestionConfig
+
 
 class DataIngestion:
-    def __init__(self, raw_data_path: Path):
-        self.raw_data_path = raw_data_path
-        self.train_data_path = Path("data/raw/train_eval.csv")
-        self.simulation_data_path = Path("data/external/new_data_simulation.csv")
+    """
+    Splits the master dataset into a training/eval partition (raw/) and a
+    simulation partition (external/) used to feed CI-driven retraining.
+    """
+
+    def __init__(self, config: DataIngestionConfig):
+        self.config = config
 
     def initiate_data_ingestion(self):
-        logging.info("Entered the data ingestion method or component")
+        logging.info("Starting data ingestion")
         try:
-            df = pd.read_csv(self.raw_data_path)
-            logging.info('Read the dataset as dataframe')
+            source = self.config.local_data_file
+            if not source.exists():
+                raise FileNotFoundError(f"Master dataset not found at {source}")
 
-            os.makedirs(os.path.dirname(self.train_data_path), exist_ok=True)
-            os.makedirs(os.path.dirname(self.simulation_data_path), exist_ok=True)
+            df = pd.read_csv(source)
+            logging.info(f"Loaded master dataset shape={df.shape}")
 
-            # Separate a partition for CI/CD simulation (e.g., 10% of the data)
-            train_eval_df, simulation_df = train_test_split(df, test_size=0.1, random_state=42)
-            
-            logging.info("Saving split datasets for simulation")
-            train_eval_df.to_csv(self.train_data_path, index=False, header=True)
-            simulation_df.to_csv(self.simulation_data_path, index=False, header=True)
+            os.makedirs(self.config.train_eval_path.parent, exist_ok=True)
+            os.makedirs(self.config.simulation_path.parent, exist_ok=True)
 
-            logging.info(f"Ingestion is completed. Train/Eval size: {len(train_eval_df)}, Simulation size: {len(simulation_df)}")
-
-            return (
-                self.train_data_path,
-                self.simulation_data_path
+            stratify = df["Class"] if "Class" in df.columns else None
+            train_eval_df, simulation_df = train_test_split(
+                df,
+                test_size=self.config.simulation_split_size,
+                random_state=self.config.random_state,
+                stratify=stratify,
             )
+
+            train_eval_df.to_csv(self.config.train_eval_path, index=False)
+            simulation_df.to_csv(self.config.simulation_path, index=False)
+
+            logging.info(
+                "Ingestion done. train_eval=%d, simulation=%d",
+                len(train_eval_df),
+                len(simulation_df),
+            )
+            return self.config.train_eval_path, self.config.simulation_path
         except Exception as e:
             raise CustomException(e, sys)
 
+
 if __name__ == "__main__":
-    obj = DataIngestion(Path("data/raw/Obfuscated-MalMem2022.csv"))
-    obj.initiate_data_ingestion()
+    from src.config.config import ConfigurationManager
+
+    config = ConfigurationManager().get_data_ingestion_config()
+    DataIngestion(config).initiate_data_ingestion()
