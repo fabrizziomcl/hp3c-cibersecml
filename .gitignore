@@ -9,6 +9,9 @@ __pycache__/
 # claudio
 .claude/
 
+# reporte
+hpcc_reporte/
+
 # Distribution / packaging
 .Python
 build/
