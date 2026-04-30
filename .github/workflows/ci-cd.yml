@@ -4,29 +4,49 @@ on:
   push:
     paths:
       - 'data/raw/**'
+      - 'src/**'
+      - '.github/workflows/ci-cd.yml'
+      - 'requirements.txt'
+    branches:
+      - main
+      - dev
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   retrain:
     runs-on: ubuntu-latest
+    # Skip the automated commits made by this very workflow to prevent loops
+    if: ${{ github.actor != 'github-actions[bot]' }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+          cache: pip
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Run unit tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: pytest -q
+
       - name: HPC Retraining
-        run: |
-          export PYTHONPATH=$PYTHON_PATH:$(pwd)
-          python src/models/train.py
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: python src/models/train.py
 
       - name: Upload Training Artifacts
         uses: actions/upload-artifact@v4
@@ -34,19 +54,20 @@ jobs:
           name: training-artifacts
           path: |
             models/model.pkl
+            models/preprocessor.pkl
             reports/
 
       - name: Check Model Improvement
         id: check_model
-        run: |
-          export PYTHONPATH=$PYTHON_PATH:$(pwd)
-          python src/utils/model_check.py
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: python src/utils/model_check.py
 
-      - name: Commit and Push changes
-        if: success()
+      - name: Commit and Push improved model
+        if: steps.check_model.outcome == 'success' && github.ref == 'refs/heads/main'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add models/model.pkl reports/
-          git commit -m "build: deploy improved model (recall threshold met)" || echo "No changes to commit"
+          git add models/model.pkl models/preprocessor.pkl reports/
+          git diff --cached --quiet || git commit -m "build: deploy improved model (recall threshold met)"
           git push
