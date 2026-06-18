@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -19,11 +20,15 @@ def _configure_root_logger() -> None:
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 
     logging.basicConfig(
-        filename=str(log_file),
         format=_LOG_FORMAT,
         level=getattr(logging, log_level, logging.INFO),
+        handlers=[
+            logging.FileHandler(log_file, encoding="utf-8"),
+            logging.StreamHandler(sys.stdout),
+        ],
         force=True,
     )
+    logging.getLogger(__name__).info("Logging to %s", log_file)
     _configured = True
 
 

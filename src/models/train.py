@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
@@ -17,6 +18,73 @@ from src.utils.exception import CustomException
 from src.utils.logger import logging
 
 REPORT_SCHEMA_VERSION = 2
+
+
+def _make_random_forest(config: ModelTrainerConfig, n_jobs: int) -> RandomForestClassifier:
+    return RandomForestClassifier(
+        n_estimators=config.params_n_estimators,
+        max_depth=config.params_max_depth,
+        n_jobs=n_jobs,
+        random_state=config.random_state,
+    )
+
+
+def _train_random_forest(
+    X_train, y_train, config: ModelTrainerConfig, n_jobs: int
+) -> RandomForestClassifier:
+    rf = _make_random_forest(config, n_jobs=n_jobs)
+    rf.fit(X_train, y_train)
+    return rf
+
+
+def _measure_random_forest_training_time(
+    X_train, y_train, config: ModelTrainerConfig, n_jobs: int
+) -> tuple[RandomForestClassifier, float]:
+    start = time.perf_counter()
+    rf = _train_random_forest(X_train, y_train, config, n_jobs=n_jobs)
+    elapsed = time.perf_counter() - start
+    return rf, elapsed
+
+
+def _benchmark_random_forest_parallelism(
+    X_train, y_train, config: ModelTrainerConfig
+) -> tuple[dict, RandomForestClassifier]:
+    logging.info(
+        "Benchmarking RandomForest training with sequential_baseline=n_jobs=1 and parallel_n_jobs=%d",
+        config.n_jobs,
+    )
+
+    _, sequential_time = _measure_random_forest_training_time(
+        X_train, y_train, config, n_jobs=1
+    )
+    parallel_model, parallel_time = _measure_random_forest_training_time(
+        X_train, y_train, config, n_jobs=config.n_jobs
+    )
+
+    effective_cores = os.cpu_count() or 1 if config.n_jobs == -1 else max(1, int(config.n_jobs))
+    speedup = sequential_time / parallel_time if parallel_time > 0 else float("inf")
+    efficiency = speedup / effective_cores
+
+    logging.info(
+        "RandomForest run metrics: n_jobs=%d sequential_time=%.6f parallel_time=%.6f speedup=%.4f efficiency=%.4f cores_used=%d",
+        config.n_jobs,
+        sequential_time,
+        parallel_time,
+        speedup,
+        efficiency,
+        effective_cores,
+    )
+
+    return (
+        {
+            "sequential_time": sequential_time,
+            "parallel_time": parallel_time,
+            "speedup": speedup,
+            "efficiency": efficiency,
+            "cores_used": effective_cores,
+        },
+        parallel_model,
+    )
 
 
 class ModelTrainer:
@@ -41,13 +109,9 @@ class ModelTrainer:
                 self.config.params_max_depth,
                 self.config.n_jobs,
             )
-            rf = RandomForestClassifier(
-                n_estimators=self.config.params_n_estimators,
-                max_depth=self.config.params_max_depth,
-                n_jobs=self.config.n_jobs,
-                random_state=self.config.random_state,
+            training_hpc_metrics, rf = _benchmark_random_forest_parallelism(
+                X_train, y_train, self.config
             )
-            rf.fit(X_train, y_train)
 
             evaluator = ModelEvaluator(self.report_dir)
             test_metrics = evaluator.evaluate_model(
@@ -73,17 +137,36 @@ class ModelTrainer:
                 "cv_folds": int(cv_scores.size),
             }
 
+            logging.info("Training performance metrics: %s", train_metrics)
+            logging.info("Test performance metrics: %s", test_metrics)
+            logging.info("Cross-validation metrics: %s", cv_metrics)
+            logging.info("Transformation HPC metrics: %s", hpc_metrics)
+            logging.info("Training HPC metrics: %s", training_hpc_metrics)
+
             os.makedirs(os.path.dirname(self.config.trained_model_file_path), exist_ok=True)
             joblib.dump(rf, self.config.trained_model_file_path)
             logging.info("Model saved at %s", self.config.trained_model_file_path)
 
-            self._write_report(train_metrics, test_metrics, cv_metrics, hpc_metrics, dataset_info)
+            self._write_report(
+                train_metrics,
+                test_metrics,
+                cv_metrics,
+                hpc_metrics,
+                training_hpc_metrics,
+                dataset_info,
+            )
             return rf
         except Exception as e:
             raise CustomException(e, sys)
 
     def _write_report(
-        self, train_metrics, test_metrics, cv_metrics, hpc_metrics, dataset_info
+        self,
+        train_metrics,
+        test_metrics,
+        cv_metrics,
+        hpc_metrics,
+        training_hpc_metrics,
+        dataset_info,
     ):
         report = {
             "schema_version": REPORT_SCHEMA_VERSION,
@@ -100,6 +183,7 @@ class ModelTrainer:
             },
             "dataset": dataset_info,
             "hpc_performance": hpc_metrics,
+            "training_hpc_performance": training_hpc_metrics,
             "model_performance": {
                 "train": train_metrics,
                 "test": test_metrics,
