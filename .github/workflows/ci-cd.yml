@@ -1,15 +1,11 @@
-name: HPC and Cloud Retraining Pipeline
+name: N-jobs testing pipeline 
 
 on:
   push:
-    paths:
-      - 'data/raw/**'
-      - 'src/**'
-      - '.github/workflows/ci-cd.yml'
-      - 'requirements.txt'
     branches:
-      - main
-      - dev
+      - test-(métricas)
+    paths:
+      - src/config/config.py
   workflow_dispatch:
 
 permissions:
