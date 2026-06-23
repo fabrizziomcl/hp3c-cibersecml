@@ -69,6 +69,6 @@ class ConfigurationManager:
             params_n_estimators=get_env("RF_N_ESTIMATORS", 100),
             params_max_depth=get_env("RF_MAX_DEPTH", 12),
             test_size=get_env("TEST_SIZE", 0.2),
-            n_jobs=get_env("N_JOBS", -1),
+            n_jobs=get_env("N_JOBS", 1),
             random_state=get_env("RANDOM_STATE", 42),
         )
