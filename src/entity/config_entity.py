@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+
 @dataclass(frozen=True)
 class DataIngestionConfig:
+    """Configuración de la fase de ingesta de datos."""
+
     root_dir: Path
     local_data_file: Path
     train_eval_path: Path
@@ -10,8 +13,11 @@ class DataIngestionConfig:
     simulation_split_size: float
     random_state: int
 
+
 @dataclass(frozen=True)
 class DataTransformationConfig:
+    """Configuración de la fase de transformación y preprocesamiento HPC."""
+
     root_dir: Path
     data_path: Path
     preprocessor_obj_file_path: Path
@@ -20,8 +26,11 @@ class DataTransformationConfig:
     force_imbalance: bool
     random_state: int
 
+
 @dataclass(frozen=True)
 class ModelTrainerConfig:
+    """Configuración de la fase de entrenamiento del modelo."""
+
     root_dir: Path
     trained_model_file_path: Path
     params_n_estimators: int

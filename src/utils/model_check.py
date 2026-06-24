@@ -3,10 +3,12 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+# Versión de esquema requerida para que un reporte sea comparable.
 REQUIRED_SCHEMA_VERSION = 2
 
 
-def _load_report(path: Path) -> Optional[dict]:
+def _cargar_reporte(path: Path) -> Optional[dict]:
+    """Carga y valida un report.json; devuelve None si no es comparable."""
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -21,7 +23,8 @@ def _load_report(path: Path) -> Optional[dict]:
     return data
 
 
-def _list_runs(reports_dir: Path = Path("reports")) -> list[Path]:
+def _listar_corridas(reports_dir: Path = Path("reports")) -> list[Path]:
+    """Lista los directorios de corridas (run_*) en orden cronológico inverso."""
     if not reports_dir.exists():
         return []
     return sorted(
@@ -31,32 +34,43 @@ def _list_runs(reports_dir: Path = Path("reports")) -> list[Path]:
 
 
 def check_improvement(reports_dir: Path = Path("reports")) -> bool:
-    runs = _list_runs(reports_dir)
-    if not runs:
-        print("INFO: No runs found. Approving by default.")
+    """Aprueba la promoción del modelo si el recall no presenta regresión.
+
+    Compara el recall de la corrida más reciente contra el de la corrida válida
+    anterior. Aprueba por defecto cuando no hay corridas previas comparables.
+    """
+    corridas = _listar_corridas(reports_dir)
+    if not corridas:
+        print("INFO: No se encontraron corridas. Se aprueba por defecto.")
         return True
 
-    new_data = _load_report(runs[0] / "report.json")
-    if new_data is None:
-        print(f"ERROR: Latest report at {runs[0]} is missing or schema-invalid.")
+    reporte_nuevo = _cargar_reporte(corridas[0] / "report.json")
+    if reporte_nuevo is None:
+        print(
+            f"ERROR: El reporte más reciente en {corridas[0]} falta o tiene "
+            "un esquema inválido."
+        )
         return False
 
-    old_data = next(
-        (loaded for d in runs[1:] if (loaded := _load_report(d / "report.json"))),
+    reporte_anterior = next(
+        (cargado for d in corridas[1:] if (cargado := _cargar_reporte(d / "report.json"))),
         None,
     )
-    if old_data is None:
-        print("INFO: No previous compatible report. Approving by default.")
+    if reporte_anterior is None:
+        print("INFO: No hay reporte previo compatible. Se aprueba por defecto.")
         return True
 
-    new_recall = new_data["model_performance"]["test"]["recall"]
-    old_recall = old_data["model_performance"]["test"]["recall"]
-    print(f"DEBUG: new_recall={new_recall:.4f} | previous_recall={old_recall:.4f}")
+    recall_nuevo = reporte_nuevo["model_performance"]["test"]["recall"]
+    recall_anterior = reporte_anterior["model_performance"]["test"]["recall"]
+    print(
+        f"DEBUG: recall_nuevo={recall_nuevo:.4f} | "
+        f"recall_anterior={recall_anterior:.4f}"
+    )
 
-    if new_recall >= old_recall:
-        print("SUCCESS: Recall did not regress. Promoting model.")
+    if recall_nuevo >= recall_anterior:
+        print("SUCCESS: El recall no presenta regresión. Se promueve el modelo.")
         return True
-    print("WARNING: Recall regression detected. Skipping promotion.")
+    print("WARNING: Regresión de recall detectada. Se omite la promoción.")
     return False
 
 

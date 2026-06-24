@@ -12,6 +12,12 @@ __pycache__/
 # reporte
 hpcc_reporte/
 
+# scripts auxiliares de experimentos/figuras (fuera del scope de la metodología)
+experimentos/
+
+# documentación / informe (no se versiona en este repo)
+docs/
+
 # Distribution / packaging
 .Python
 build/

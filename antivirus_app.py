@@ -10,7 +10,7 @@ st.set_page_config(page_title="Antivirus Inteligente - CibersecML", layout="wide
 
 @st.cache_resource
 def get_pipeline() -> InferencePipeline:
-    """Load model + preprocessor once for the entire Streamlit session."""
+    """Carga el modelo y el preprocesador una sola vez por sesión de Streamlit."""
     pipeline = InferencePipeline()
     pipeline.load()
     return pipeline

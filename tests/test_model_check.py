@@ -41,7 +41,7 @@ def test_invalid_schema_rejects(tmp_path):
 
 
 def test_skips_incompatible_old_run(tmp_path):
-    # Newest with v2 + intermediate with v1 + older with v2 -> compares to older v2
+    # Más reciente con v2 + intermedio con v1 + antiguo con v2 -> compara con el v2 antiguo
     _write_run(tmp_path, "run_20260101_000000", 0.7, schema=2)
     _write_run(tmp_path, "run_20260102_000000", 0.95, schema=1)
     _write_run(tmp_path, "run_20260103_000000", 0.8, schema=2)

@@ -12,9 +12,12 @@ from src.utils.logger import logging
 
 
 class InferencePipeline:
-    """
-    Loads model + preprocessor lazily on first use, then reuses them. Apply the
-    same scaler+PCA fitted at training time so prediction matches training space.
+    """Capa de inferencia compartida por la API y la interfaz Streamlit.
+
+    Carga el modelo y el preprocesador de forma perezosa en el primer uso y
+    luego los reutiliza. Aplica el mismo escalador + PCA ajustado en el
+    entrenamiento para que el espacio de predicción coincida con el de
+    entrenamiento.
     """
 
     def __init__(
@@ -35,23 +38,26 @@ class InferencePipeline:
 
     # ------------------------------------------------------------------
     def load(self) -> None:
+        """Carga el modelo y el preprocesador desde disco si aún no lo están."""
         if self._model is None:
-            logging.info("Loading model from %s", self.model_path)
+            logging.info("Cargando modelo desde %s", self.model_path)
             self._model = joblib.load(self.model_path)
         if self._preprocessor is None and self.preprocessor_path.exists():
-            logging.info("Loading preprocessor from %s", self.preprocessor_path)
+            logging.info("Cargando preprocesador desde %s", self.preprocessor_path)
             bundle = joblib.load(self.preprocessor_path)
             self._preprocessor = bundle["pipeline"]
             self._feature_cols = bundle["feature_cols"]
 
-    def _prepare(self, features) -> np.ndarray:
+    def _preparar(self, features) -> np.ndarray:
+        """Selecciona las columnas requeridas y aplica el preprocesador."""
         if isinstance(features, pd.DataFrame):
             df = features.drop(columns=["Class", "Category"], errors="ignore")
             if self._feature_cols is not None:
-                missing = [c for c in self._feature_cols if c not in df.columns]
-                if missing:
+                faltantes = [c for c in self._feature_cols if c not in df.columns]
+                if faltantes:
                     raise CustomException(
-                        f"Missing required feature columns: {missing}", sys
+                        f"Faltan columnas de características requeridas: {faltantes}",
+                        sys,
                     )
                 df = df[self._feature_cols]
             X = df.to_numpy(dtype=np.float64)
@@ -66,17 +72,19 @@ class InferencePipeline:
 
     # ------------------------------------------------------------------
     def predict(self, features) -> np.ndarray:
+        """Devuelve las etiquetas predichas para las características dadas."""
         try:
             self.load()
-            X = self._prepare(features)
+            X = self._preparar(features)
             return self._model.predict(X)
         except Exception as e:
             raise CustomException(e, sys)
 
     def predict_proba(self, features) -> np.ndarray:
+        """Devuelve las probabilidades de clase para las características dadas."""
         try:
             self.load()
-            X = self._prepare(features)
+            X = self._preparar(features)
             return self._model.predict_proba(X)
         except Exception as e:
             raise CustomException(e, sys)

@@ -1,47 +1,54 @@
 import os
 import sys
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from src.utils.logger import logging
-from src.utils.exception import CustomException
+
 from src.entity.config_entity import DataIngestionConfig
+from src.utils.exception import CustomException
+from src.utils.logger import logging
 
 
 class DataIngestion:
-    """
-    Splits the master dataset into a training/eval partition (raw/) and a
-    simulation partition (external/) used to feed CI-driven retraining.
+    """Parte el dataset maestro en dos particiones.
+
+    Genera una partición de entrenamiento/evaluación (``data/raw/``) y una
+    partición de simulación (``data/external/``) que alimenta el reentrenamiento
+    disparado por el flujo CI/CD.
     """
 
     def __init__(self, config: DataIngestionConfig):
         self.config = config
 
     def initiate_data_ingestion(self):
-        logging.info("Starting data ingestion")
+        """Carga el dataset maestro, lo divide y persiste ambas particiones."""
+        logging.info("Iniciando la ingesta de datos")
         try:
-            source = self.config.local_data_file
-            if not source.exists():
-                raise FileNotFoundError(f"Master dataset not found at {source}")
+            origen = self.config.local_data_file
+            if not origen.exists():
+                raise FileNotFoundError(f"Dataset maestro no encontrado en {origen}")
 
-            df = pd.read_csv(source)
-            logging.info(f"Loaded master dataset shape={df.shape}")
+            df = pd.read_csv(origen)
+            logging.info("Dataset maestro cargado: shape=%s", df.shape)
 
             os.makedirs(self.config.train_eval_path.parent, exist_ok=True)
             os.makedirs(self.config.simulation_path.parent, exist_ok=True)
 
-            stratify = df["Class"] if "Class" in df.columns else None
+            # Estratifica por la variable objetivo si está presente, para
+            # conservar la proporción de clases en ambas particiones.
+            estratificar = df["Class"] if "Class" in df.columns else None
             train_eval_df, simulation_df = train_test_split(
                 df,
                 test_size=self.config.simulation_split_size,
                 random_state=self.config.random_state,
-                stratify=stratify,
+                stratify=estratificar,
             )
 
             train_eval_df.to_csv(self.config.train_eval_path, index=False)
             simulation_df.to_csv(self.config.simulation_path, index=False)
 
             logging.info(
-                "Ingestion done. train_eval=%d, simulation=%d",
+                "Ingesta completada. train_eval=%d, simulación=%d",
                 len(train_eval_df),
                 len(simulation_df),
             )

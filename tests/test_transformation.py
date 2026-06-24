@@ -4,39 +4,42 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from src.data.transformation import DataTransformation, _scale_chunk
+from src.data.transformation import DataTransformation, _escalar_fragmento
 from src.entity.config_entity import DataTransformationConfig
 
 
-def _make_synthetic_csv(path: Path, n_rows: int = 200, seed: int = 0):
-    rng = np.random.default_rng(seed)
+def _crear_csv_sintetico(path: Path, n_filas: int = 200, semilla: int = 0):
+    """Genera un CSV sintético con una columna de varianza cero a descartar."""
+    rng = np.random.default_rng(semilla)
     df = pd.DataFrame(
         {
-            "feat_a": rng.normal(0, 1, n_rows),
-            "feat_b": rng.normal(5, 2, n_rows),
-            "feat_c": rng.normal(-3, 0.5, n_rows),
-            "feat_zero": np.zeros(n_rows),  # zero variance, must be dropped
-            "Category": ["Benign-x"] * (n_rows // 2) + ["Trojan-x"] * (n_rows - n_rows // 2),
-            "Class": ["Benign"] * (n_rows // 2) + ["Malware"] * (n_rows - n_rows // 2),
+            "feat_a": rng.normal(0, 1, n_filas),
+            "feat_b": rng.normal(5, 2, n_filas),
+            "feat_c": rng.normal(-3, 0.5, n_filas),
+            "feat_zero": np.zeros(n_filas),  # varianza cero, debe eliminarse
+            "Category": ["Benign-x"] * (n_filas // 2)
+            + ["Trojan-x"] * (n_filas - n_filas // 2),
+            "Class": ["Benign"] * (n_filas // 2)
+            + ["Malware"] * (n_filas - n_filas // 2),
         }
     )
     df.to_csv(path, index=False)
 
 
-def test_scale_chunk_matches_manual_normalization():
+def test_escalar_fragmento_coincide_con_normalizacion_manual():
     rng = np.random.default_rng(0)
     X = rng.normal(0, 1, (50, 3))
-    mean = X.mean(axis=0)
-    scale = X.std(axis=0)
-    out = _scale_chunk(X, mean, scale)
-    expected = (X - mean) / scale
-    assert np.allclose(out, expected)
+    media = X.mean(axis=0)
+    escala = X.std(axis=0)
+    salida = _escalar_fragmento(X, media, escala)
+    esperado = (X - media) / escala
+    assert np.allclose(salida, esperado)
 
 
-def test_transformation_persists_preprocessor(tmp_path):
+def test_transformation_persiste_preprocesador(tmp_path):
     raw = tmp_path / "raw"
     raw.mkdir()
-    _make_synthetic_csv(raw / "a.csv")
+    _crear_csv_sintetico(raw / "a.csv")
 
     cfg = DataTransformationConfig(
         root_dir=tmp_path / "processed",
@@ -61,10 +64,10 @@ def test_transformation_persists_preprocessor(tmp_path):
     assert "feat_zero" not in bundle["feature_cols"]
 
 
-def test_parallel_matches_sequential(tmp_path):
+def test_paralelo_coincide_con_secuencial(tmp_path):
     raw = tmp_path / "raw"
     raw.mkdir()
-    _make_synthetic_csv(raw / "a.csv", n_rows=300)
+    _crear_csv_sintetico(raw / "a.csv", n_filas=300)
     cfg = DataTransformationConfig(
         root_dir=tmp_path / "processed",
         data_path=raw,
@@ -74,5 +77,6 @@ def test_parallel_matches_sequential(tmp_path):
         force_imbalance=False,
         random_state=42,
     )
-    # The internal np.allclose check raises if parallel diverges from sequential
+    # La verificación interna con np.allclose lanza si el paralelo diverge del
+    # secuencial.
     DataTransformation(cfg).initiate_data_transformation()
