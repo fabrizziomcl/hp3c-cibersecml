@@ -90,11 +90,28 @@ def get_model_metrics() -> dict:
     return {}
 
 
+def _normalizar_repo(repo: str) -> str:
+    """Acepta 'owner/repo' o una URL completa y devuelve 'owner/repo'."""
+    repo = repo.strip().rstrip("/")
+    for prefijo in ("https://github.com/", "http://github.com/", "git@github.com:"):
+        if repo.startswith(prefijo):
+            repo = repo[len(prefijo):]
+    if repo.endswith(".git"):
+        repo = repo[: -len(".git")]
+    return repo
+
+
 def _secret(key: str):
+    """Lee una clave de st.secrets de forma robusta (top-level o sección [github])."""
     try:
-        return st.secrets.get(key)
+        if key in st.secrets:
+            return st.secrets[key]
+        github = st.secrets.get("github") if hasattr(st.secrets, "get") else None
+        if isinstance(github, dict) and key in github:
+            return github[key]
     except Exception:
-        return None
+        pass
+    return None
 
 
 def aportar_al_repositorio(muestras: pd.DataFrame) -> tuple[str, str]:
@@ -108,7 +125,7 @@ def aportar_al_repositorio(muestras: pd.DataFrame) -> tuple[str, str]:
 
     token = _secret("GITHUB_TOKEN")
     if token:
-        repo = _secret("GITHUB_REPO") or DEFAULT_REPO
+        repo = _normalizar_repo(_secret("GITHUB_REPO") or DEFAULT_REPO)
         api = f"https://api.github.com/repos/{repo}/contents/data/raw/{nombre}"
         resp = requests.put(
             api,
@@ -240,6 +257,22 @@ def main():
     st.divider()
     st.subheader("Aportar al reentrenamiento")
     aportes = st.session_state.aportes
+
+    token_ok = bool(_secret("GITHUB_TOKEN"))
+    if not token_ok:
+        st.warning(
+            "No se detectó `GITHUB_TOKEN` en los *secrets*. En Streamlit Cloud el "
+            "guardado local NO persiste; configura el token para subir al repositorio."
+        )
+    with st.expander("🔧 Diagnóstico de secrets"):
+        try:
+            claves = list(st.secrets.keys())
+        except Exception as e:
+            claves = f"(no accesible: {e})"
+        st.write("Claves detectadas:", claves)
+        st.write("GITHUB_TOKEN presente:", token_ok)
+        st.write("Repositorio destino:", _normalizar_repo(_secret("GITHUB_REPO") or DEFAULT_REPO))
+
     st.caption(
         f"{len(aportes)} muestra(s) analizada(s) en esta sesión. Al enviarlas se "
         "crea un lote en `data/raw/` que el pipeline CI/CD incorporará al reentrenar."
@@ -250,7 +283,10 @@ def main():
             st.success(f"Commit creado: `{detalle}`. El workflow se reentrenará.")
             st.session_state.aportes = []
         elif destino == "local":
-            st.success(f"Guardado localmente en `{detalle}`.")
+            st.warning(
+                f"Guardado solo localmente en `{detalle}` (no persiste en Streamlit "
+                "Cloud). Configura `GITHUB_TOKEN` para subirlo al repositorio."
+            )
             st.session_state.aportes = []
         else:
             st.error(f"No se pudo subir: {detalle}")
