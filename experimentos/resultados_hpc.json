@@ -1,0 +1,100 @@
+{
+  "config": {
+    "nucleos_disponibles": 14,
+    "rejilla_solicitada": [
+      1,
+      4,
+      8,
+      16
+    ],
+    "repeticiones": 7,
+    "n_filas": 58047,
+    "n_features": 52,
+    "rf_n_estimators": 100,
+    "rf_max_depth": 12
+  },
+  "experimento_a_escalado": {
+    "t_seq": 0.03120120003586635,
+    "t_seq_std": 0.0034953717618061825,
+    "puntos": [
+      {
+        "solicitados": 1,
+        "efectivos": 1,
+        "recortado": false,
+        "t_par_mediana": 0.04649969999445602,
+        "t_par_std": 0.004126777665905334,
+        "speedup": 0.6709978782569854,
+        "eficiencia": 0.6709978782569854
+      },
+      {
+        "solicitados": 4,
+        "efectivos": 4,
+        "recortado": false,
+        "t_par_mediana": 0.33096789999399334,
+        "t_par_std": 0.020111143633637606,
+        "speedup": 0.09427258666605617,
+        "eficiencia": 0.023568146666514043
+      },
+      {
+        "solicitados": 8,
+        "efectivos": 8,
+        "recortado": false,
+        "t_par_mediana": 0.4067969999741763,
+        "t_par_std": 0.1245471152807817,
+        "speedup": 0.07669968076914781,
+        "eficiencia": 0.009587460096143476
+      },
+      {
+        "solicitados": 16,
+        "efectivos": 14,
+        "recortado": true,
+        "t_par_mediana": 0.5014346999814734,
+        "t_par_std": 1.7114574185995817,
+        "speedup": 0.06222385494466009,
+        "eficiencia": 0.004444561067475721
+      }
+    ]
+  },
+  "experimento_b_entrenamiento": {
+    "t_seq": 7.652255700028036,
+    "t_seq_std": 0.30324442866219625,
+    "puntos": [
+      {
+        "solicitados": 1,
+        "efectivos": 1,
+        "recortado": false,
+        "t_par_mediana": 7.652255700028036,
+        "t_par_std": 0.30324442866219625,
+        "speedup": 1.0,
+        "eficiencia": 1.0
+      },
+      {
+        "solicitados": 4,
+        "efectivos": 4,
+        "recortado": false,
+        "t_par_mediana": 3.895299200026784,
+        "t_par_std": 0.1542347302073317,
+        "speedup": 1.964484705045358,
+        "eficiencia": 0.4911211762613395
+      },
+      {
+        "solicitados": 8,
+        "efectivos": 8,
+        "recortado": false,
+        "t_par_mediana": 1.2870999000151642,
+        "t_par_std": 0.08755641005800043,
+        "speedup": 5.945347132680128,
+        "eficiencia": 0.743168391585016
+      },
+      {
+        "solicitados": 16,
+        "efectivos": 14,
+        "recortado": true,
+        "t_par_mediana": 0.9656620000023395,
+        "t_par_std": 0.10188490271098187,
+        "speedup": 7.924362458095583,
+        "eficiencia": 0.5660258898639702
+      }
+    ]
+  }
+}
