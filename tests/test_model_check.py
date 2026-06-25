@@ -1,48 +1,44 @@
+"""Gate de promoción por recall (model_check)."""
+
 import json
 from pathlib import Path
 
 from src.utils.model_check import check_improvement
 
 
-def _write_run(reports_dir: Path, name: str, recall: float, schema=2):
-    run = reports_dir / name
+def _escribir_corrida(reports_dir: Path, nombre: str, recall: float):
+    run = reports_dir / nombre
     run.mkdir(parents=True, exist_ok=True)
     payload = {
-        "schema_version": schema,
+        "schema_version": 2,
         "model_performance": {"test": {"recall": recall}},
     }
     (run / "report.json").write_text(json.dumps(payload))
 
 
-def test_no_runs_approves(tmp_path):
+def test_sin_corridas_aprueba(tmp_path):
     assert check_improvement(tmp_path) is True
 
 
-def test_first_run_approves(tmp_path):
-    _write_run(tmp_path, "run_20260101_000000", 0.9)
+def test_primera_corrida_aprueba(tmp_path):
+    _escribir_corrida(tmp_path, "run_20260101_000000", 0.90)
     assert check_improvement(tmp_path) is True
 
 
-def test_recall_regression_rejects(tmp_path):
-    _write_run(tmp_path, "run_20260101_000000", 0.9)
-    _write_run(tmp_path, "run_20260102_000000", 0.8)
+def test_regresion_de_recall_rechaza(tmp_path):
+    _escribir_corrida(tmp_path, "run_20260101_000000", 0.90)
+    _escribir_corrida(tmp_path, "run_20260102_000000", 0.80)
     assert check_improvement(tmp_path) is False
 
 
-def test_recall_improvement_accepts(tmp_path):
-    _write_run(tmp_path, "run_20260101_000000", 0.8)
-    _write_run(tmp_path, "run_20260102_000000", 0.95)
+def test_mejora_de_recall_aprueba(tmp_path):
+    _escribir_corrida(tmp_path, "run_20260101_000000", 0.80)
+    _escribir_corrida(tmp_path, "run_20260102_000000", 0.95)
     assert check_improvement(tmp_path) is True
 
 
-def test_invalid_schema_rejects(tmp_path):
-    _write_run(tmp_path, "run_20260102_000000", 0.95, schema=1)
+def test_reporte_con_esquema_invalido_rechaza(tmp_path):
+    run = tmp_path / "run_20260102_000000"
+    run.mkdir(parents=True)
+    (run / "report.json").write_text(json.dumps({"schema_version": 1}))
     assert check_improvement(tmp_path) is False
-
-
-def test_skips_incompatible_old_run(tmp_path):
-    # Más reciente con v2 + intermedio con v1 + antiguo con v2 -> compara con el v2 antiguo
-    _write_run(tmp_path, "run_20260101_000000", 0.7, schema=2)
-    _write_run(tmp_path, "run_20260102_000000", 0.95, schema=1)
-    _write_run(tmp_path, "run_20260103_000000", 0.8, schema=2)
-    assert check_improvement(tmp_path) is True

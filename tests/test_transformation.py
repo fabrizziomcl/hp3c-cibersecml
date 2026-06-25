@@ -1,3 +1,5 @@
+"""Transformación: limpieza, escalado y equivalencia secuencial/paralela."""
+
 from pathlib import Path
 
 import joblib
