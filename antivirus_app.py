@@ -156,7 +156,11 @@ def _escanear(simulacion: pd.DataFrame):
     muestra = simulacion.sample(1).reset_index(drop=True)
     features = muestra.drop(columns=NO_FEATURE_COLS, errors="ignore")
     pipeline = get_pipeline()
-    return muestra, int(pipeline.predict(features)[0]), float(pipeline.predict_proba(features)[0][1])
+    return (
+        muestra,
+        int(pipeline.predict(features)[0]),
+        float(pipeline.predict_proba(features)[0][1]),
+    )
 
 
 def main():
@@ -216,14 +220,14 @@ def main():
         acc = f"{metrics['accuracy'] * 100:.2f}%" if metrics.get("accuracy") else "N/D"
         st.markdown(
             f"""
-            <div class="result-card {'result-danger' if es_malware else 'result-safe'}">
-                <div class="result-label">{'⛔ MALICIOSO' if es_malware else '✅ BENIGNO'}</div>
-                <div class="result-proba">Probabilidad de malware: <strong>{r['proba'] * 100:.1f}%</strong></div>
+            <div class="result-card {"result-danger" if es_malware else "result-safe"}">
+                <div class="result-label">{"⛔ MALICIOSO" if es_malware else "✅ BENIGNO"}</div>
+                <div class="result-proba">Probabilidad de malware: <strong>{r["proba"] * 100:.1f}%</strong></div>
                 <div class="metric-row">
                     <div><div class="metric-value">{acc}</div><div class="metric-label">Accuracy</div></div>
                     <div><div class="metric-value">{recall}</div><div class="metric-label">Recall</div></div>
                 </div>
-                <div class="result-meta">🕐 {r['timestamp']}</div>
+                <div class="result-meta">🕐 {r["timestamp"]}</div>
             </div>
             """,
             unsafe_allow_html=True,
