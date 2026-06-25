@@ -12,13 +12,9 @@ from src.utils.logger import logging
 
 
 class InferencePipeline:
-    """Capa de inferencia compartida por la API y la interfaz Streamlit.
-
-    Carga el modelo y el preprocesador de forma perezosa en el primer uso y
-    luego los reutiliza. Aplica el mismo escalador + PCA ajustado en el
-    entrenamiento para que el espacio de predicción coincida con el de
-    entrenamiento.
-    """
+    """Capa de inferencia compartida por la API y la UI. Carga modelo y
+    preprocesador de forma perezosa y aplica el mismo escalador + PCA del
+    entrenamiento."""
 
     def __init__(
         self,
@@ -36,7 +32,6 @@ class InferencePipeline:
         self._preprocessor = None
         self._feature_cols: list[str] | None = None
 
-    # ------------------------------------------------------------------
     def load(self) -> None:
         """Carga el modelo y el preprocesador desde disco si aún no lo están."""
         if self._model is None:
@@ -70,7 +65,6 @@ class InferencePipeline:
             X = self._preprocessor.transform(X)
         return X
 
-    # ------------------------------------------------------------------
     def predict(self, features) -> np.ndarray:
         """Devuelve las etiquetas predichas para las características dadas."""
         try:

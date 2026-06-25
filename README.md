@@ -33,8 +33,6 @@ El workflow se activa por *push* a `data/raw/**` o `src/**`, o manualmente. Ejec
 
 ## Inicio rápido
 
-> Las dependencias fijadas en `requirements.txt` (numpy 1.26, scikit-learn 1.5, …) tienen *wheels* para Python 3.10–3.12. En versiones más nuevas se compilan desde el código fuente; usa un entorno 3.11/3.12 o Docker.
-
 ```bash
 cp .env.example .env
 pip install -r requirements.txt

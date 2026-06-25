@@ -16,53 +16,33 @@ from src.utils.hpc import resolver_workers
 from src.utils.logger import logging
 
 
-# Columnas que el EDA identificó como de varianza cero sobre el dataset
-# maestro. Se eliminan de forma defensiva, pero ADEMÁS se elimina cualquier
-# otra columna cuya varianza sea exactamente cero en el dataset concatenado
-# actual.
+# Columnas constantes detectadas en el EDA; se descartan junto con cualquier
+# otra de varianza cero en el dataset concatenado.
 COLUMNAS_VARIANZA_CERO_CONOCIDAS = (
     "pslist.nprocs64bit",
     "handles.nport",
     "svcscan.interactive_process_services",
 )
-
-# Mapeo de la variable objetivo a valores enteros.
 MAPEO_CLASES = {"Benign": 0, "Malware": 1}
-
-# Columnas que no son características numéricas de entrada del modelo.
 COLUMNAS_NO_FEATURE = ("Class", "Category")
 
 
 def _escalar_fragmento(
     fragmento: np.ndarray, media: np.ndarray, escala: np.ndarray
 ) -> np.ndarray:
-    """Aplica un escalado pre-ajustado a un fragmento.
-
-    Operación de numpy puro, segura para ejecutar en paralelo (no comparte
-    estado mutable entre procesos).
-    """
+    """Escalado vectorizado de un fragmento; seguro en paralelo."""
     return (fragmento - media) / escala
 
 
 class DataTransformation:
-    """Transforma los datos crudos y mide el rendimiento HPC.
-
-    Concatena todos los CSV de ``data/raw/``, limpia y deduplica, ajusta un
-    ``Pipeline`` de scikit-learn (``StandardScaler`` + ``PCA``) y lo persiste.
-    Adicionalmente mide el tiempo de escalado en modo secuencial frente a modo
-    paralelo (``joblib`` con backend ``loky``) para exponer métricas HPC de
-    *speedup* y eficiencia.
-    """
+    """Concatena y limpia los CSV de ``data/raw/``, ajusta el preprocesador
+    (``StandardScaler`` + ``PCA``) y mide el escalado secuencial vs paralelo."""
 
     def __init__(self, config: DataTransformationConfig):
         self.config = config
         self.feature_cols: list[str] = []
 
-    # ------------------------------------------------------------------
-    # Limpieza
-    # ------------------------------------------------------------------
     def _cargar_y_limpiar(self) -> pd.DataFrame:
-        """Carga, concatena y limpia todos los CSV del directorio crudo."""
         raw_path = self.config.data_path
         archivos = sorted(f for f in os.listdir(raw_path) if f.endswith(".csv"))
         if not archivos:
@@ -136,9 +116,6 @@ class DataTransformation:
 
         return df
 
-    # ------------------------------------------------------------------
-    # API pública
-    # ------------------------------------------------------------------
     def initiate_data_transformation(self):
         """Ejecuta la transformación completa y devuelve (X_pca, y, métricas HPC)."""
         try:

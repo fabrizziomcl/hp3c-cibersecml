@@ -30,18 +30,8 @@ class ModelEvaluator:
         os.makedirs(self.report_dir, exist_ok=True)
 
     def evaluate_model(self, y_true, y_pred, y_proba, prefix="test"):
-        """Calcula las métricas de un conjunto y guarda sus gráficos.
-
-        Args:
-            y_true: etiquetas reales.
-            y_pred: etiquetas predichas.
-            y_proba: probabilidad de la clase positiva (malware).
-            prefix: prefijo del conjunto ("train" o "test") usado en los
-                nombres de archivo de los gráficos.
-
-        Returns:
-            Diccionario con accuracy, precision, recall, f1_score y roc_auc.
-        """
+        """Calcula accuracy, precision, recall, f1 y ROC-AUC, y guarda los
+        gráficos del conjunto (``prefix`` = "train" o "test")."""
         try:
             logging.info("Calculando métricas de rendimiento del conjunto '%s'", prefix)
             metrics = {

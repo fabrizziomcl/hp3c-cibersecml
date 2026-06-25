@@ -1,0 +1,75 @@
+{
+    "schema_version": 2,
+    "metadata": {
+        "report_id": "REP-982ed3bf",
+        "timestamp": "2026-06-25 00:01:03",
+        "model_name": "Random Forest Classifier",
+        "parameters": {
+            "n_estimators": 100,
+            "max_depth": 12,
+            "n_jobs": 16,
+            "random_state": 42,
+            "cv_folds": 5,
+            "cv_scoring": "recall"
+        }
+    },
+    "dataset": {
+        "total_rows": 34994,
+        "class_distribution": {
+            "0": 29231,
+            "1": 5763
+        },
+        "train_size": 27995,
+        "test_size": 6999
+    },
+    "hpc_performance": {
+        "transformation": {
+            "time_seq": 0.019206699973437935,
+            "time_par": 5.528417300025467,
+            "speedup": 0.0034741769535648944,
+            "efficiency": 0.0008685442383912236,
+            "num_workers": 4,
+            "backend": "joblib/loky",
+            "n_features": 52,
+            "pca_components": 3,
+            "pca_varianza_explicada": 0.6547433777198928,
+            "workers_solicitados": 4,
+            "workers_disponibles": 14,
+            "workers_efectivos": 4,
+            "hubo_recorte": false
+        },
+        "training": {
+            "time_seq": 4.892005799978506,
+            "time_par": 0.5958518999977969,
+            "speedup": 8.210103550893425,
+            "efficiency": 0.586435967920959,
+            "num_workers": 14,
+            "backend": "joblib/loky",
+            "workers_solicitados": 16,
+            "workers_disponibles": 14,
+            "workers_efectivos": 14,
+            "hubo_recorte": true
+        }
+    },
+    "model_performance": {
+        "train": {
+            "accuracy": 0.999892838006787,
+            "precision": 1.0,
+            "recall": 0.999349240780911,
+            "f1_score": 0.9996745144841055,
+            "roc_auc": 0.9999999999999999
+        },
+        "test": {
+            "accuracy": 0.9992856122303186,
+            "precision": 0.9991304347826087,
+            "recall": 0.9965307892454467,
+            "f1_score": 0.9978289188015632,
+            "roc_auc": 0.9998624718453013
+        },
+        "cv": {
+            "cv_recall_mean": 0.9956616052060738,
+            "cv_recall_std": 0.002057881340673564,
+            "cv_folds": 5
+        }
+    }
+}
