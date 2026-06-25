@@ -43,9 +43,13 @@ pytest -q
 ```
 
 ### Aplicación
-```bash
-streamlit run antivirus_app.py            # UI local en http://localhost:8501
-```
+
+Desplegada en: [https://hp3c-cibersecml.streamlit.app/](https://hp3c-cibersecml.streamlit.app/)
+
+Usa:
+- GITHUB_TOKEN = "tu_github_token"
+- GITHUB_REPO = "fabrizziomcl/hp3c-cibersecml"
+- GITHUB_BRANCH = "main"
 
 ### Despliegue completo (Docker)
 ```bash
