@@ -13,7 +13,7 @@ __pycache__/
 hpcc_reporte/
 
 # scripts auxiliares de experimentos/figuras (fuera del scope de la metodología)
-experimentos/
+#experimentos/
 
 # documentación / informe (no se versiona en este repo)
 docs/
@@ -173,4 +173,3 @@ Thumbs.db
 !data/processed/
 !logs/
 !dataset/
-
